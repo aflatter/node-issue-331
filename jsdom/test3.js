@@ -1,30 +1,23 @@
 var common = require('../common'),
     assert = common.assert;
-    jsdom  = require('jsdom'),
-    xhr    = require("./XMLHttpRequest.js");
 
-createWindow = function(fn) {
-      var window = jsdom.jsdom().createWindow(),
-          document = window.document;
- 
-      window.XMLHttpRequest = xhr.XMLHttpRequest;
+var Script = process.binding("evals").Script;
+var sandbox = {x: "x"};
+sandbox.window  = sandbox;
 
-      //jsdom.jQueryify(window, __dirname + '/jquery.js', function() {
-        
-      var script = document.createElement('script');
-      script.src = 'file://' + __dirname + '/foo.js';
-      script.onload = function() {
-        fn(window);
-      }
+var code = "function y() { return this.x }" + 
+           "function z() { return window.x }";
 
-      //});
+var result = Script.runInNewContext(code, sandbox);
 
-    }
+// Passes
+common.debug("x");
+assert.equal(sandbox.x, "x");
 
-    createWindow(function(window) {
+// Passes
+common.debug("y");
+assert.equal(sandbox.y(), "x");
 
-      //sys.puts(util.inspect(window));
-      sys.puts(window.bar);
-            sys.puts(window.x);
-  
-    });
+// Fails
+common.debug("z");
+assert.equal(sandbox.z(), "x");
